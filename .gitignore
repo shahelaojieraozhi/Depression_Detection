@@ -1,0 +1,10 @@
+# 忽略 Python 编译文件
+**/__pycache__/
+*.pyc
+*.py[cod]
+*.h5
+
+/backup
+/DepressionCollected/Classification/EATD-Corpus
+/DepressionCollected/DAICFeatureExtarction/DAIC_demo
+/Regression/Model
