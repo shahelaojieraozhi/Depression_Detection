@@ -1,13 +1,9 @@
 
 import itertools
 import os
-import re
-import wave
+import shutil
 
-import librosa
 import numpy as np
-import pandas as pd
-import tensorflow.compat.v1 as tf
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -44,7 +40,7 @@ config = {
     'text_embed_size': 1024,
     'batch_size': 4,
     'epochs': 150,
-    'learning_rate': 8e-5,
+    'learning_rate': 8e-5,      # 
     'audio_hidden_dims': 256,
     'text_hidden_dims': 128,
     'cuda': False,
@@ -279,10 +275,21 @@ class fusion_net(nn.Module):
         # ============================= last fc layer =============================
         # self.bn = nn.BatchNorm1d(self.text_hidden_dims + self.audio_hidden_dims)
         # modal attention
-        self.modal_attn = nn.Linear(self.text_hidden_dims + self.audio_hidden_dims, self.text_hidden_dims + self.audio_hidden_dims, bias=False)
+
+        # self.modal_attn = nn.Linear(self.text_hidden_dims + self.audio_hidden_dims, self.text_hidden_dims + self.audio_hidden_dims, bias=False)
+
+        input_dim = self.text_hidden_dims + self.audio_hidden_dims
+        self.modal_attn = nn.Sequential(
+            nn.Linear(input_dim, input_dim),
+            nn.LayerNorm(input_dim),
+            nn.Sigmoid()
+            # nn.ReLU(), 
+        )
         self.fc_final = nn.Sequential(
             nn.Linear(self.text_hidden_dims + self.audio_hidden_dims, self.num_classes, bias=False),
-            nn.ReLU(),
+            nn.ReLU(), 
+            # nn.PReLU(),
+            # nn.LeakyReLU(negative_slope=0.01)
             # nn.Softmax(dim=1),
             # nn.Sigmoid()
         )
@@ -347,7 +354,8 @@ class fusion_net(nn.Module):
         
     def forward(self, x): 
         # x = self.bn(x)
-        modal_weights = torch.sigmoid(self.modal_attn(x))
+        # modal_weights = torch.sigmoid(self.modal_attn(x))
+        modal_weights = self.modal_attn(x)
         # modal_weights = self.modal_attn(x)
         x = (modal_weights * x)
         output = self.fc_final(x)
@@ -453,10 +461,10 @@ def evaluate(model, fold, train_mae):
         min_mae = mae
         min_rmse = rmse
 
-        save_path = 'Model/Regression/Fuse{}/fuse_{:.2f}'.format(fold+1, min_mae)
+        save_path = 'Model/Regression/Fuse{}/'.format(fold+1)
         os.makedirs(save_path, exist_ok=True)
     
-        save(model, os.path.join(prefix, 'Model/Regression/Fuse{}/fuse_{:.2f}'.format(fold+1, min_mae)))
+        save(model, os.path.join(prefix, 'Model/Regression/Fuse{}/fuse_{:.2f}_{:.2f}'.format(fold+1, min_mae, rmse)))
         print('*' * 64)
         print('model saved: mae: {}\t rmse: {}'.format(min_mae, min_rmse))
         print('*' * 64)
@@ -531,7 +539,12 @@ def evaluate_text(model):
         print('MAE: {:.4f}\t RMSE: {:.4f}\n'.format(mae, rmse))
         print('='*89)
 
-for fold in range(2):
+
+# if os.path.exists("Model/Regression/Fuse1"):
+#     shutil.rmtree("Model/Regression/Fuse1")
+#     shutil.rmtree("Model/Regression/Fuse2")
+
+for fold in range(1):
     test_dep_idxs_tmp = dep_idxs[fold*10:(fold+1)*10]
     test_non_idxs = non_idxs[fold*44:(fold+1)*44]
     train_dep_idxs_tmp = list(set(dep_idxs) - set(test_dep_idxs_tmp))
@@ -588,7 +601,7 @@ for fold in range(2):
 
     model.fc_final[0].weight.requires_grad = True
     # model.fc_final[0].bias.requires_grad = True
-    model.modal_attn.weight.requires_grad = True
+    # model.modal_attn.weight.requires_grad = True
     min_mae = 100
     min_rmse = 100
     train_mae = 100

@@ -5,7 +5,7 @@ import jieba
 from elmoformanylangs import Embedder
 
 prefix = os.path.abspath(os.path.join(os.getcwd(), "."))
-elmo = Embedder('../zhs.model')
+elmo = Embedder('zhs.model')
 
 topics = ['positive', 'neutral', 'negative']
 answers = {}
@@ -30,6 +30,7 @@ def extract_features(text_features, text_targets, path):
                 target = float(fli.readline())
             # text_targets.append(1 if target >= 53 else 0)
             text_targets.append(target)
+            # a = elmo.sents2elmo(answers[index+1])
             text_features.append([np.array(item).mean(axis=0) for item in elmo.sents2elmo(answers[index+1])])
 
 extract_features(text_features, text_targets, 'EATD-Corpus/t')
