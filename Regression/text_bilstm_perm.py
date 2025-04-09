@@ -15,8 +15,11 @@ import random
 import itertools
 
 prefix = os.path.abspath(os.path.join(os.getcwd(), "../"))
-text_features = np.load("Features/TextWhole/whole_samples_reg_avg.npz")["arr_0"]
-text_targets = np.load("Features/TextWhole/whole_labels_reg_avg.npz")["arr_0"]
+text_features = np.load("Features/TextWhole/whole_samples_reg_avg_bert.npz")["arr_0"]
+text_targets = np.load("Features/TextWhole/whole_labels_reg_avg_bert.npz")["arr_0"]
+
+# text_features = np.load("Features/TextWhole/whole_samples_reg_avg.npz")["arr_0"]
+# text_targets = np.load("Features/TextWhole/whole_labels_reg_avg.npz")["arr_0"]
 
 dep_idxs = np.load("Features/AudioWhole/dep_idxs.npy", allow_pickle=True)
 non_idxs = np.load("Features/AudioWhole/non_idxs.npy", allow_pickle=True)
@@ -25,7 +28,7 @@ config = {
     "num_classes": 1,
     "dropout": 0.5,
     "rnn_layers": 2,
-    "embedding_size": 1024,
+    "embedding_size": 768,  # 1024
     "batch_size": 2,
     "epochs": 110,
     "learning_rate": 1e-5,
@@ -229,12 +232,13 @@ def evaluate(fold, model, train_mae):
             mode = "bi" if config["bidirectional"] else "norm"
             mode = "gru"
 
-            save_path = "Model/Regression/Text{}/BiLSTM_{}_{:.2f}".format(
-                fold + 1, config["hidden_dims"], min_mae
+            save_path = "Model/Regression/Text{}".format(fold + 1)
+            model_path = "Model/Regression/Text{}/BiLSTM_{}_{:.2f}_{:.2f}".format(
+                fold + 1, config["hidden_dims"], min_mae, min_rmse
             )
             os.makedirs(save_path, exist_ok=True)
 
-            save(model, save_path)
+            save(model, model_path)
             print("*" * 64)
             print("model saved: mae: {}\t rmse: {}".format(min_mae, min_rmse))
             print("*" * 64)
@@ -251,7 +255,7 @@ for fold in range(2):
     # training data augmentation
     train_dep_idxs = []
     for i, idx in enumerate(train_dep_idxs_tmp):
-        feat = text_features[idx]
+        feat = text_features[idx]  # [3, 1024]  # feat.shape=768
         if i < 14:
             for i in itertools.permutations(feat, feat.shape[0]):
                 text_features = np.vstack((text_features, np.expand_dims(list(i), 0)))
@@ -286,6 +290,7 @@ for fold in range(2):
         train_mae = train(ep)
         tloss = evaluate(fold, model, train_mae)
 
+print()
 # ============== prep ==============
 # X_test = np.squeeze(np.load(os.path.join(prefix, 'Features/Audio/val_samples_reg_avid256.npz'))['arr_0'], axis=2)
 # Y_test = np.load(os.path.join(prefix, 'Features/Audio/val_labels_reg_avid256.npz'))['arr_0']

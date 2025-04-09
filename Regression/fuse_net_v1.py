@@ -13,10 +13,10 @@ from torch.nn import functional as F
 
 prefix = os.path.abspath(os.path.join(os.getcwd(), "./"))
 
-text_features = np.load(os.path.join(prefix, 'Features/TextWhole/whole_samples_reg_avg.npz'))['arr_0']
-text_targets = np.load(os.path.join(prefix, 'Features/TextWhole/whole_labels_reg_avg.npz'))['arr_0']
-audio_features = np.squeeze(np.load(os.path.join(prefix, 'Features/AudioWhole/whole_samples_reg_256.npz'))['arr_0'], axis=2)
-audio_targets = np.load(os.path.join(prefix, 'Features/AudioWhole/whole_labels_reg_256.npz'))['arr_0']
+text_features = np.load(os.path.join(prefix, 'Features/TextWhole/whole_samples_reg_avg_bert.npz'))['arr_0']
+text_targets = np.load(os.path.join(prefix, 'Features/TextWhole/whole_labels_reg_avg_bert.npz'))['arr_0']
+audio_features = np.squeeze(np.load(os.path.join(prefix, 'Features/AudioWhole/whole_samples_reg_256_mfcc.npz'))['arr_0'], axis=2)
+audio_targets = np.load(os.path.join(prefix, 'Features/AudioWhole/whole_labels_reg_256_mfcc.npz'))['arr_0']
 fuse_features = [[audio_features[i], text_features[i]] for i in range(text_features.shape[0])]
 fuse_targets = text_targets
 
@@ -28,16 +28,18 @@ non_idxs = np.load(os.path.join(prefix, 'Features/AudioWhole/non_idxs.npy'), all
 # text_model_paths = ['Model/Regression/Text1/BiLSTM_128_7.75.pt', 'Model/Regression/Text2/BiLSTM_128_8.46.pt', 'Model/Regression/Text3/BiLSTM_128_8.01.pt']
 # audio_model_paths = ['Model/Regression/Audio1/gru_vlad256_256_7.60.pt', 'Model/Regression/Audio2/gru_vlad256_256_8.38.pt', 'Model/Regression/Audio3/gru_vlad256_256_8.25.pt']
 
-text_model_paths = ['Model/Regression/Text1/BiLSTM_128_10.91.pt', 'Model/Regression/Text2/BiLSTM_128_9.66.pt']
-audio_model_paths = ['Model/Regression/Audio1/gru_vlad256_256_10.26.pt', 'Model/Regression/Audio2/gru_vlad256_256_11.23.pt']
+# text_model_paths = ['Model/Regression/Text1/BiLSTM_128_10.91.pt', 'Model/Regression/Text2/BiLSTM_128_9.66.pt']
+# audio_model_paths = ['Model/Regression/Audio1/gru_vlad256_256_10.26.pt', 'Model/Regression/Audio2/gru_vlad256_256_11.23.pt']
 
+text_model_paths = ['Model/Regression/Text1/BiLSTM_128_9.82_11.83.pt', 'Model/Regression/Text2/BiLSTM_128_10.22_12.16.pt']
+audio_model_paths = ['Model/Regression/Audio1/gru_vlad256_256_10.05_12.47.pt', 'Model/Regression/Audio2/gru_vlad256_256_9.56_13.12.pt']
 
 config = {
     'num_classes': 1,
     'dropout': 0.7,     # 0.7
     'rnn_layers': 2,
     'audio_embed_size': 256,
-    'text_embed_size': 1024,
+    'text_embed_size': 768,
     'batch_size': 4,
     'epochs': 150,
     'learning_rate': 2e-2,      # 
@@ -500,10 +502,10 @@ def evaluate(model, fold, train_mae):
         min_mae = mae
         min_rmse = rmse
 
-        save_path = 'Model/Regression/Fuse{}/'.format(fold+1)
+        save_path = 'Model/Regression/Fuse{}_new/'.format(fold+1)
         os.makedirs(save_path, exist_ok=True)
     
-        save(model, os.path.join(prefix, 'Model/Regression/Fuse{}/fuse_{:.2f}_{:.2f}'.format(fold+1, min_mae, rmse)))
+        save(model, os.path.join(prefix, 'Model/Regression/Fuse{}_new/fuse_{:.2f}_{:.2f}'.format(fold+1, min_mae, rmse)))
         print('*' * 64)
         print('model saved: mae: {}\t rmse: {}'.format(min_mae, min_rmse))
         print('*' * 64)
@@ -650,3 +652,5 @@ for fold in range(1):
         tloss = evaluate(model, fold, train_mae)
     # evaluate_audio(audio_lstm_model)
     # evaluate_text(text_lstm_model)
+
+print()

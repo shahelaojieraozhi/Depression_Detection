@@ -16,9 +16,9 @@ import itertools
 
 prefix = os.path.abspath(os.path.join(os.getcwd(), "./"))
 audio_features = np.squeeze(
-    np.load("Features/AudioWhole/whole_samples_reg_256.npz")["arr_0"], axis=2
+    np.load("Features/AudioWhole/whole_samples_reg_256_mfcc.npz")["arr_0"], axis=2
 )
-audio_targets = np.load("Features/AudioWhole/whole_labels_reg_256.npz")["arr_0"]
+audio_targets = np.load("Features/AudioWhole/whole_labels_reg_256_mfcc.npz")["arr_0"]
 
 # audio_dep_idxs = np.where(audio_targets >= 53)[0]
 # audio_non_idxs = np.where(audio_targets < 53)[0]
@@ -239,12 +239,19 @@ def evaluate(fold, model, train_mae):
             mode = "bi" if config["bidirectional"] else "norm"
             mode = "gru"
 
-            save_path = "Model/Regression/Audio{}/{}_vlad{}_{}_{:.2f}".format(
-                fold + 1, mode, config["embedding_size"], config["hidden_dims"], min_mae
+            save_path = "Model/Regression/Audio{}".format(fold + 1)
+
+            model_path = "Model/Regression/Audio{}/{}_vlad{}_{}_{:.2f}_{:.2f}".format(
+                fold + 1,
+                mode,
+                config["embedding_size"],
+                config["hidden_dims"],
+                min_mae,
+                min_rmse,
             )
             os.makedirs(save_path, exist_ok=True)
 
-            save(model, save_path)
+            save(model, model_path)
             print("*" * 64)
             print("model saved: mae: {}\t rmse: {}".format(min_mae, min_rmse))
             print("*" * 64)
@@ -296,3 +303,6 @@ for fold in range(2):  # 3
     for ep in range(1, config["epochs"]):
         train_mae = train(ep)
         tloss = evaluate(fold, model, train_mae)
+
+
+print()
